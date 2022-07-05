@@ -4,8 +4,9 @@ const myPeer=new Peer(undefined,{
     host: '/',
     port: '3001'
 })
-
+let myId;
 const peers={};
+let myVideoStream;
 
 const myVideo=document.createElement('video')
 myVideo.muted=true;
@@ -14,6 +15,8 @@ navigator.mediaDevices.getUserMedia({
     video:true,
     audio:true
 }).then(stream=>{
+    myVideoStream=stream;
+
  addVideoStream(myVideo,stream)
  console.log("hey12");
 myPeer.on('call',call=>{
@@ -36,6 +39,22 @@ socket.on('user-connected',userId=>{
     connectToNewUser(userId,stream);
 })
 
+let text = $("input");
+// when press enter send message
+$('html').keydown(function (e) {
+  if (e.which == 13 && text.val().length !== 0) {
+    console.log("key down",myId);
+    socket.emit('message',myId,text.val());
+    text.val('')
+  }
+});
+
+socket.on('createMessage', (senderId,message)=>{
+    console.log(senderId);
+  $('ul').append(`<li class="messages"> <b>${senderId}</b><br/>${message}</li>`)
+    scrollToBottom();
+
+})
 })
 
 
@@ -45,6 +64,8 @@ peers[userId].close();
 })
 
 myPeer.on('open',id=>{
+    myId=id;
+    console.log(id);
     socket.emit('join-room',ROOM_ID,id)
 })
 
@@ -71,3 +92,69 @@ function addVideoStream(video,stream){
     })
     videoGrid.append(video);
 }
+
+
+
+
+
+const scrollToBottom=()=>{
+    let d=$('.main_chat_window');
+    d.scrollTop(d.prop("scrollHeight"));
+}
+
+//Mute video
+const muteUnmute=()=>{
+    const enabled = myVideoStream.getAudioTracks()[0].enabled;
+    if(enabled){
+        myVideoStream.getAudioTracks()[0].enabled=false;
+        setUnmuteButton();
+    }
+    else{
+        setMuteButton();
+        myVideoStream.getAudioTracks()[0].enabled=true;
+    }
+}
+
+const setMuteButton=()=>{
+    const html=`
+    <i class="unmute  fas fa-microphone-slash"></i>
+    <span>Mute</span>
+    `
+    document.querySelector('.main_mute_button').innerHTML=html;
+}
+const  setUnmuteButton=()=>{
+    const html=`
+    <i class=" fas fa-microphone"></i>
+    <span>Unmute</span>
+    `
+    document.querySelector('.main_mute_button').innerHTML=html;
+}
+
+
+//video on off
+const video=()=>{
+    const enabled = myVideoStream.getVideoTracks()[0].enabled;
+    if(enabled){
+        myVideoStream.getVideoTracks()[0].enabled=false;
+        setVideoButton();
+    }
+    else{
+        unSetVideoButton();
+        myVideoStream.getVideoTracks()[0].enabled=true;
+    }
+}
+const setVideoButton=()=>{
+    const html=`
+    <i class="fa-solid fa-video"></i>
+    <span>Camera on </span>
+    `
+    document.querySelector('.main_video_button').innerHTML=html;
+}
+const  unSetVideoButton=()=>{
+    const html=`
+    <i class="unmute fa-solid fa-video-slash"></i>
+     <span>Camera off </span>
+    `
+    document.querySelector('.main_video_button').innerHTML=html;
+}
+
